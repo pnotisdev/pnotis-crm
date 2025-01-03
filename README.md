@@ -1,6 +1,6 @@
 # Pnotis CRM
 
-Pnotis CRM is a Customer Relationship Management (CRM) system currently in development. This project aims to provide a robust and efficient solution for managing customer interactions and data.
+Pnotis CRM is a Customer Relationship Management (CRM) system currently in very early development (no accounts or signups as of yet). This project aims to provide a robust and efficient solution for managing customer interactions and data.
 
 ## Technologies Used
 
