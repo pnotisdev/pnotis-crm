@@ -26,6 +26,7 @@ export default async function handler(req, res) {
         }
 
         const newLead = await createLead(lead);
+        // await logActivity(user.userId, user.teamId, 'CREATE_LEAD', { id: newLead[0].id });
         return res.status(201).json(newLead[0]); // Return first item from array
 
       } catch (error) {
@@ -39,10 +40,19 @@ export default async function handler(req, res) {
         if (!id) {
           return res.status(400).json({ error: 'ID is required' });
         }
-        const deleted = await deleteLead(id);
-        if (!deleted || deleted.length === 0) {
-          return res.status(404).json({ error: 'Lead not found' });
+
+        // Check if the lead belongs to the user's team
+        const leadResult = await pool.query(
+          'SELECT * FROM leads WHERE id = $1 AND team_id = $2',
+          [id, user.teamId]
+        );
+
+        if (leadResult.rows.length === 0) {
+          return res.status(404).json({ error: 'Lead not found or not authorized to delete' });
         }
+
+        const deleted = await deleteLead(id);
+        // await logActivity(user.userId, user.teamId, 'DELETE_LEAD', { id });
         return res.status(200).json(deleted[0]);
       } catch (error) {
         console.error('Delete Lead Error:', error);
@@ -57,11 +67,21 @@ export default async function handler(req, res) {
         if (!id || !lead) {
           return res.status(400).json({ error: 'ID and lead data are required' });
         }
+
+        // add a check so user can't update another team's lead
+        const leadCheckUpdate = await pool.query(
+          'SELECT * FROM leads WHERE id = $1 AND team_id = $2',
+          [id, user.teamId]
+        );
+        if (leadCheckUpdate.rows.length === 0) {
+          return res.status(404).json({ error: 'Not found or not authorized' });
+        }
         
         const updated = await updateLead(id, lead);
         if (!updated || updated.length === 0) {
           return res.status(404).json({ error: 'Lead not found' });
         }
+        // await logActivity(user.userId, user.teamId, 'UPDATE_LEAD', { id: updated[0].id });
         return res.status(200).json(updated[0]);
       } catch (error) {
         console.error('Update Lead Error:', error);

@@ -67,7 +67,12 @@ async function handleRegister(req, res) {
       
       await client.query('COMMIT');
       
-      res.status(201).json({ message: 'User and team created successfully', user: userResult.rows[0] });
+      const token = jwt.sign({ userId: userResult.rows[0].id, teamId: teamResult.rows[0].id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      return res.status(201).json({
+        message: 'User and team created successfully',
+        user: userResult.rows[0],
+        token
+      });
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -82,11 +87,6 @@ async function handleRegister(req, res) {
 
 async function handleLogin(req, res) {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
-  }
-
   try {
     const result = await pool.query(
       'SELECT u.*, t.name as team_name FROM users u JOIN teams t ON u.team_id = t.id WHERE u.email = $1',
@@ -98,7 +98,9 @@ async function handleLogin(req, res) {
       const token = jwt.sign(
         { 
           userId: user.id, 
-          teamId: user.team_id 
+          teamId: user.team_id,
+          name: user.name,
+          email: user.email
         }, 
         process.env.JWT_SECRET, 
         { expiresIn: '1d' }

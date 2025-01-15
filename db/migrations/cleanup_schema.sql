@@ -58,6 +58,13 @@ BEGIN
         ALTER TABLE user_teams DROP COLUMN team;
     END IF;
 
+    -- Add team_id column to users table if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'users' AND column_name = 'team_id') THEN
+        ALTER TABLE users ADD COLUMN team_id INTEGER;
+        ALTER TABLE users ADD CONSTRAINT fk_user_team FOREIGN KEY (team_id) REFERENCES teams(id);
+    END IF;
+
     -- Add missing columns to tasks if they don't exist
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                   WHERE table_name = 'tasks' AND column_name = 'lead_id') THEN

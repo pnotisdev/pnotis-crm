@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import Navbar from '../components/Navbar';
 import '../src/app/globals.css';
 
 function MyApp({ Component, pageProps }) {
@@ -19,7 +20,12 @@ function MyApp({ Component, pageProps }) {
     return null; // or a loading spinner
   }
 
-  return <Component {...pageProps} />;
+  return (
+    <>
+      {isAuthenticated && <Navbar />}
+      <Component {...pageProps} />
+    </>
+  );
 }
 
 export default MyApp;

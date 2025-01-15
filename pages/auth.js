@@ -26,8 +26,8 @@ export default function AuthPage() {
         body: JSON.stringify(formData),
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+      if (response.ok && data.token) {
         localStorage.setItem('token', data.token);
         router.push('/leads');
       } else {

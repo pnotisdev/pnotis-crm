@@ -1,5 +1,5 @@
 import { getLeads, getContacts, getLeadStats } from '../lib/db';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserCircleIcon, PlusIcon, TrashIcon, PencilIcon, ChevronDownIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import '../src/app/globals.css';
 
@@ -31,6 +31,7 @@ export default function LeadsPage({ leads: initialLeads, contacts, stats }) {
   const [formVisible, setFormVisible] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState(null);
+  const [error, setError] = useState(null);
   const leadsPerPage = 10;
 
   const statusColors = {
@@ -139,6 +140,22 @@ export default function LeadsPage({ leads: initialLeads, contacts, stats }) {
       <p className={`mt-2 text-3xl font-semibold ${color}`}>{value}</p>
     </div>
   );
+
+  useEffect(() => {
+    const fetchLeads = async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/leads', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Failed to fetch leads');
+      const data = await response.json();
+      setLeads(data);
+    };
+    fetchLeads();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
