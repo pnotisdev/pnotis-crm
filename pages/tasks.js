@@ -1,23 +1,35 @@
-import { getTasks, createTask } from '../lib/db';
-import { useState } from 'react';
-import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
 import { CalendarIcon, ClipboardDocumentListIcon, PlusIcon } from '@heroicons/react/24/outline';
 import '../src/app/globals.css';
 
-export async function getServerSideProps() {
-  const tasks = await getTasks();
-  return { props: { tasks } };
-}
-
-export default function TasksPage({ tasks }) {
+export default function TasksPage() {
+  const [tasks, setTasks] = useState([]);
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks');
+      if (!response.ok) throw new Error('Failed to fetch tasks');
+      const data = await response.json();
+      setTasks(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddTask = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setCreating(true);
     try {
       const response = await fetch('/api/tasks', {
         method: 'POST',
@@ -27,14 +39,17 @@ export default function TasksPage({ tasks }) {
       if (!response.ok) {
         throw new Error('Failed to create task');
       }
-      router.replace(router.asPath);
+      fetchTasks();
     } catch (error) {
       console.error(error);
       alert('Failed to create task');
     } finally {
-      setLoading(false);
+      setCreating(false);
     }
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
@@ -72,9 +87,9 @@ export default function TasksPage({ tasks }) {
               className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900"
             />
           </div>
-          <button type="submit" className="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-md hover:shadow-xl" disabled={loading}>
+          <button type="submit" className="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-md hover:shadow-xl" disabled={creating}>
             <PlusIcon className="h-5 w-5 mr-2" />
-            {loading ? 'Adding...' : 'Add Task'}
+            {creating ? 'Adding...' : 'Add Task'}
           </button>
         </form>
 

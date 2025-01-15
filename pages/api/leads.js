@@ -1,6 +1,20 @@
 import { createLead, deleteLead, updateLead } from '../../lib/db';
+import { verifyToken } from './auth/[...auth]';
+import { Pool } from 'pg';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
 export default async function handler(req, res) {
+  const user = verifyToken(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   switch (req.method) {
     case 'POST':
       try {
@@ -54,8 +68,20 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Failed to update lead' });
       }
 
+    case 'GET':
+      try {
+        const result = await pool.query(
+          'SELECT l.*, c.name as contact_name FROM leads l LEFT JOIN contacts c ON l.contact_id = c.id WHERE l.team_id = $1',
+          [user.teamId]
+        );
+        return res.status(200).json(result.rows);
+      } catch (error) {
+        console.error('Get Leads Error:', error);
+        return res.status(500).json({ error: 'Failed to fetch leads' });
+      }
+
     default:
-      res.setHeader('Allow', ['POST', 'DELETE', 'PUT']);
+      res.setHeader('Allow', ['POST', 'DELETE', 'PUT', 'GET']);
       return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
 }
