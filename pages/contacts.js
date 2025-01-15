@@ -1,20 +1,41 @@
 import { getContacts } from '../lib/db';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { UserCircleIcon, EnvelopeIcon, PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import '../src/app/globals.css';
-export async function getServerSideProps() {
-  const contacts = await getContacts();
+
+export async function getServerSideProps(context) {
+  const { req } = context;
+  const token = req.cookies.token;
+
+  if (!token) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+
+  const contacts = await getContacts(token);
   return { props: { contacts } };
 }
 
-export default function ContactsPage({ contacts }) {
+export default function ContactsPage({ contacts: initialContacts }) {
+  const [contacts, setContacts] = useState(initialContacts);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [editingContact, setEditingContact] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+    }
+  }, []);
 
   const handleAddContact = async (e) => {
     e.preventDefault();
